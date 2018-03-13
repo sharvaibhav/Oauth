@@ -6,7 +6,7 @@ import request from 'superagent';
 import Home from './home';
 import './style.css'
 
-import {redirect_uri,response_type,client_id,scope,client_secret,authurl,verifyOauthToken} from '../services/loginServicesGoogle';
+import {redirect_uri,response_type,client_id,scope,client_secret,authurl,fetchAccessToken} from '../services/loginServicesGoogle';
 
 
 
@@ -21,18 +21,24 @@ class Login extends Component {
       'dataFetched':false,
       'profileData' : {},
       'expires_in' : '',
-      'access_token':''
+      'access_token':'',
+      'refresh_token':''
     }
     this.getNewCodeFlag = false;
   }
 
   componentDidMount(){
     var curContext = this;
-    this.queries = queryString.parse(this.props.location.hash);
-
-    verifyOauthToken(this.queries.access_token).then(function(res){
-      console.log(res);
-    })
+    this.queries = queryString.parse(this.props.location.search);
+    if(this.queries.code){
+      fetchAccessToken(this.queries.code).then((res)=>{
+        console.log(res);
+        if(res.access_token){
+          this.setState(prevState=>({...prevState,'dataFetched':true,'access_token':res.access_token,'refresh_token':res.refresh_token,'expires_in':res.expires_in}));
+          this.props.history.push('/home',this.state);
+        }
+      });
+    }
 
     // if(this.queries.code){
     //   fetchAccessToken(this.queries.code).then(fetchProfiledata).then((data)=>{
@@ -58,7 +64,8 @@ class Login extends Component {
                 <a href={authurl}><img src={signin} alt="Sign in with Linkedin"/></a>
               }
               {this.state.dataFetched && 
-                <Home data ={dataObject} expires_in={this.state.expires_in}/>
+                <h2> The user has sucessfully logged in </h2>
+
               }
           </div>
       );
